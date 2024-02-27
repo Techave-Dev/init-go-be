@@ -2,6 +2,7 @@ package tools
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/caarlos0/env/v10"
 	"github.com/invopop/validation"
@@ -29,10 +30,12 @@ func (a AppEnv) Valid() bool {
 }
 
 type Config struct {
-	AppEnv        AppEnv `env:"APP_ENV"`
-	PostgresURL   string `env:"POSTGRES_URL"`
-	MigrationPath string `env:"MIGRATION_PATH"`
-	AppPort       string `env:"APP_PORT"`
+	AppEnv        AppEnv        `env:"APP_ENV"`
+	PostgresURL   string        `env:"POSTGRES_URL"`
+	MigrationPath string        `env:"MIGRATION_PATH"`
+	AppPort       string        `env:"APP_PORT"`
+	JwtKey        string        `env:"JWT_KEY"`
+	JwtDuration   time.Duration `env:"JWT_DURATION"`
 }
 
 func (c *Config) Validate() error {
@@ -50,6 +53,8 @@ func (c *Config) Validate() error {
 		validation.Field(&c.PostgresURL, validation.Required, is.URL),
 		validation.Field(&c.MigrationPath, validation.Required),
 		validation.Field(&c.AppPort, validation.Required),
+		validation.Field(&c.JwtKey, validation.Required),
+		validation.Field(&c.JwtDuration, validation.Required),
 	)
 }
 
