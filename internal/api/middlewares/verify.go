@@ -7,13 +7,13 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/techave-dev/init-go-be/internal/repo"
+	"github.com/techave-dev/init-go-be/internal/repo/psql"
 	"github.com/techave-dev/init-go-be/tools"
 )
 
-func (m *MiddlewaresManager) Verify(ability repo.AbilityEnum) fiber.Handler {
+func (m *MiddlewaresManager) Verify(ability psql.AbilityEnum) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		if ability == repo.AbilityEnumPublic {
+		if ability == psql.AbilityEnumPublic {
 			return c.Next()
 		}
 
@@ -26,7 +26,7 @@ func (m *MiddlewaresManager) Verify(ability repo.AbilityEnum) fiber.Handler {
 		}
 
 		token, err := jwt.ParseWithClaims(tokenString, &tools.JwtClaims{}, func(t *jwt.Token) (interface{}, error) {
-			return []byte("handiism"), nil
+			return []byte(m.config.JwtKey), nil
 		})
 		if err != nil {
 			return c.Status(400).JSON(map[string]any{"error": err.Error()})
@@ -36,7 +36,7 @@ func (m *MiddlewaresManager) Verify(ability repo.AbilityEnum) fiber.Handler {
 			return c.Status(400).JSON(map[string]any{"error": err.Error()})
 		}
 
-		if ability == repo.AbilityEnumPrivate {
+		if ability == psql.AbilityEnumPrivate {
 			c.Locals("CredentialID", claims.CredentialID.String())
 			return c.Next()
 		}

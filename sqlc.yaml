@@ -6,8 +6,8 @@ sql:
     schema: "database/migrations/"
     gen:
       go:
-        package: "repo"
-        out: "internal/repo/"
+        package: "psql"
+        out: "internal/repo/psql/"
         sql_package: "pgx/v5"
         json_tags_case_style: camel
         emit_json_tags: true

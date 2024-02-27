@@ -7,7 +7,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/invopop/validation"
 	"github.com/invopop/validation/is"
-	"github.com/techave-dev/init-go-be/internal/repo"
+	"github.com/techave-dev/init-go-be/internal/repo/psql"
 	"github.com/techave-dev/init-go-be/tools"
 )
 
@@ -47,7 +47,7 @@ func (r *RegisterHandlerRequest) Validate() error {
 		validation.Field(&r.Role, validation.Required, validation.By(func(value interface{}) error {
 			var err error = fmt.Errorf("invalid role: %s ", value)
 			switch enum := value.(type) {
-			case repo.RoleEnum:
+			case psql.RoleEnum:
 				if valid := enum.Valid(); valid {
 					err = nil
 				}

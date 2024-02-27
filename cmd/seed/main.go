@@ -7,7 +7,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sirupsen/logrus"
-	"github.com/techave-dev/init-go-be/internal/repo"
+	"github.com/techave-dev/init-go-be/internal/repo/psql"
 	"github.com/techave-dev/init-go-be/tools"
 )
 
@@ -23,11 +23,11 @@ func main() {
 		logrus.Fatal("cannot connect to db")
 	}
 
-	queries := repo.New(pool)
+	queries := psql.New(pool)
 
-	abilities := []repo.Ability{}
-	for _, abilityEnum := range repo.AllAbilityEnumValues() {
-		ability, err := queries.UpsertAbility(context.Background(), repo.UpsertAbilityParams{
+	abilities := []psql.Ability{}
+	for _, abilityEnum := range psql.AllAbilityEnumValues() {
+		ability, err := queries.UpsertAbility(context.Background(), psql.UpsertAbilityParams{
 			Name: abilityEnum,
 			Desc: pgtype.Text{Valid: false},
 		})
@@ -41,9 +41,9 @@ func main() {
 
 	fmt.Printf("abilities: %v\n", abilities)
 
-	roles := []repo.Role{}
-	for _, roleEnum := range repo.AllRoleEnumValues() {
-		role, err := queries.UpsertRole(context.Background(), repo.UpsertRoleParams{
+	roles := []psql.Role{}
+	for _, roleEnum := range psql.AllRoleEnumValues() {
+		role, err := queries.UpsertRole(context.Background(), psql.UpsertRoleParams{
 			Name: roleEnum,
 			Desc: pgtype.Text{Valid: false},
 		})
@@ -57,14 +57,14 @@ func main() {
 
 	fmt.Printf("roles: %v\n", roles)
 
-	roleAbilityMap := map[repo.RoleEnum][]repo.AbilityEnum{
-		repo.RoleEnumAdmin: {},
-		repo.RoleEnumUser:  {},
+	roleAbilityMap := map[psql.RoleEnum][]psql.AbilityEnum{
+		psql.RoleEnumAdmin: {},
+		psql.RoleEnumUser:  {},
 	}
 
 	for role, v := range roleAbilityMap {
 		for _, roleAbilities := range v {
-			roleAbility, err := queries.UpsertRoleAbilityByName(context.Background(), repo.UpsertRoleAbilityByNameParams{
+			roleAbility, err := queries.UpsertRoleAbilityByName(context.Background(), psql.UpsertRoleAbilityByNameParams{
 				Role:    role,
 				Ability: roleAbilities,
 			})

@@ -4,7 +4,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/techave-dev/init-go-be/internal/api/credentials"
 	"github.com/techave-dev/init-go-be/internal/api/middlewares"
-	"github.com/techave-dev/init-go-be/internal/repo"
+	"github.com/techave-dev/init-go-be/internal/repo/psql"
 )
 
 func (s *Server) MapHandlers(f *fiber.App) {
@@ -21,5 +21,5 @@ func (s *Server) MapHandlers(f *fiber.App) {
 	credentials := f.Group("/credentials")
 	credentials.Post("/login", credHandlers.Login())
 	credentials.Post("/register", credHandlers.Register())
-	credentials.Post("/me", mid.Verify(repo.AbilityEnumPrivate), credHandlers.Me())
+	credentials.Post("/me", mid.Verify(psql.AbilityEnumPrivate), credHandlers.Me())
 }

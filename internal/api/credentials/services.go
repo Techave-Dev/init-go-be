@@ -7,7 +7,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/techave-dev/init-go-be/internal/repo"
+	"github.com/techave-dev/init-go-be/internal/repo/psql"
 	"github.com/techave-dev/init-go-be/tools"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -15,26 +15,26 @@ import (
 type Services struct {
 	config  *tools.Config
 	pool    *pgxpool.Pool
-	queries repo.Querier
+	queries psql.Querier
 }
 
 func NewServices(config *tools.Config, pool *pgxpool.Pool) Services {
 	return Services{
 		config,
 		pool,
-		repo.New(pool),
+		psql.New(pool),
 	}
 }
 
-type RegisterParams = repo.InsertCredentialParams
+type RegisterParams = psql.InsertCredentialParams
 
-func (s *Services) Register(c context.Context, params RegisterParams) (repo.Credential, error) {
+func (s *Services) Register(c context.Context, params RegisterParams) (psql.Credential, error) {
 	safePassword, err := bcrypt.GenerateFromPassword([]byte(params.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return repo.Credential{}, err
+		return psql.Credential{}, err
 	}
 
-	credential, err := s.queries.InsertCredential(c, repo.InsertCredentialParams{
+	credential, err := s.queries.InsertCredential(c, psql.InsertCredentialParams{
 		Email:    params.Email,
 		Password: string(safePassword),
 		Role:     params.Role,
@@ -50,7 +50,7 @@ type LoginParams struct {
 
 type LoginReturn struct {
 	Token      string          `json:"token"`
-	Credential repo.Credential `json:"credential"`
+	Credential psql.Credential `json:"credential"`
 }
 
 func (s *Services) Login(c context.Context, params LoginParams) (LoginReturn, error) {
@@ -67,12 +67,12 @@ func (s *Services) Login(c context.Context, params LoginParams) (LoginReturn, er
 		CredentialID: credential.ID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: &jwt.NumericDate{
-				Time: time.Now().Add(1 * time.Hour),
+				Time: time.Now().Add(s.config.JwtDuration),
 			},
 		},
 	})
 
-	tokenString, err := token.SignedString([]byte("handiism"))
+	tokenString, err := token.SignedString([]byte(s.config.JwtKey))
 	if err != nil {
 		return LoginReturn{}, err
 	}
@@ -83,6 +83,6 @@ func (s *Services) Login(c context.Context, params LoginParams) (LoginReturn, er
 	}, nil
 }
 
-func (s *Services) CredentialById(c context.Context, id uuid.UUID) (repo.Credential, error) {
+func (s *Services) CredentialById(c context.Context, id uuid.UUID) (psql.Credential, error) {
 	return s.queries.FindCredentialById(c, id)
 }
