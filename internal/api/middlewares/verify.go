@@ -1,7 +1,6 @@
 package middlewares
 
 import (
-	"fmt"
 	"slices"
 	"strings"
 
@@ -19,21 +18,31 @@ func (m *MiddlewaresManager) Verify(ability psql.AbilityEnum) fiber.Handler {
 
 		headers := c.GetReqHeaders()
 		auths := headers["Authorization"]
+		query := c.Query("token", "")
 		tokenString := ""
 		if len(auths) > 0 {
 			splitedAuths := strings.Split(auths[0], " ")
-			fmt.Printf("splitedAuths: %v\n", splitedAuths)
+			if len(splitedAuths) == 2 {
+				tokenString = splitedAuths[1]
+			}
+		} else if query != "" {
+			tokenString = query
+		}
+
+		if tokenString == "" {
+			return tools.Fail(c, 400, tools.String("Permintaan gagal, tidak ada token permintaan"))
 		}
 
 		token, err := jwt.ParseWithClaims(tokenString, &tools.JwtClaims{}, func(t *jwt.Token) (interface{}, error) {
 			return []byte(m.config.JwtKey), nil
 		})
 		if err != nil {
-			return c.Status(400).JSON(map[string]any{"error": err.Error()})
+			return tools.Fail(c, 400, tools.String("Format token tidak valid"))
 		}
+
 		claims, ok := token.Claims.(*tools.JwtClaims)
 		if !ok {
-			return c.Status(400).JSON(map[string]any{"error": err.Error()})
+			return tools.Fail(c, 400, tools.String("Format token tidak valid"))
 		}
 
 		if ability == psql.AbilityEnumPrivate {
@@ -43,11 +52,11 @@ func (m *MiddlewaresManager) Verify(ability psql.AbilityEnum) fiber.Handler {
 
 		abilities, err := m.services.FindCredentialAbilities(c.Context(), claims.CredentialID)
 		if err != nil {
-			return c.Status(400).JSON(map[string]any{"error": err.Error()})
+			return tools.Fail(c, 404, tools.String("Akun tidak dapat ditemukan"))
 		}
 
 		if authorized := slices.Contains(abilities, ability); !authorized {
-			return c.Status(400).JSON(map[string]any{"error": "ability did not permitted"})
+			return tools.Fail(c, 401, tools.String("Akun tidak dapat mengakses endpoint yang dituju"))
 		}
 
 		c.Locals("CredentialID", claims.CredentialID.String())

@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/caarlos0/env/v10"
-	"github.com/invopop/validation"
-	"github.com/invopop/validation/is"
+	validation "github.com/go-ozzo/ozzo-validation/v4"
+	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
 )

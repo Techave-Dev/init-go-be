@@ -3,10 +3,10 @@ package credentials
 import (
 	"fmt"
 
+	validation "github.com/go-ozzo/ozzo-validation/v4"
+	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofrs/uuid"
-	"github.com/invopop/validation"
-	"github.com/invopop/validation/is"
 	"github.com/techave-dev/init-go-be/internal/repo/psql"
 	"github.com/techave-dev/init-go-be/tools"
 )
@@ -39,7 +39,7 @@ func (r *RegisterHandlerRequest) Validate() error {
 		validation.Field(&r.Email, validation.Required, is.Email),
 		validation.Field(&r.Password, validation.Required, validation.Length(8, 255), validation.By(func(value interface{}) error {
 			if value.(string) != r.RetypePassword {
-				return fmt.Errorf("invalid retype password")
+				return fmt.Errorf("kombinasi kata sandi salah")
 			}
 			return nil
 		})),
@@ -61,20 +61,20 @@ func (h *Handlers) Register() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		var req RegisterHandlerRequest
 		if err := c.BodyParser(&req); err != nil {
-			return c.Status(400).JSON(map[string]any{"error": err.Error()})
+			return tools.Fail(c, fiber.StatusConflict, tools.String(err.Error()))
+
 		}
 
 		if err := req.Validate(); err != nil {
-			return c.Status(400).JSON(map[string]any{"error": err.Error()})
+			return tools.Fail(c, fiber.StatusConflict, tools.String(err.Error()))
 		}
 
-		data, err := h.services.Register(c.Context(), req.RegisterParams)
-
+		credential, err := h.services.Register(c.Context(), req.RegisterParams)
 		if err != nil {
-			return c.Status(400).JSON(map[string]any{"error": err.Error()})
+			return tools.Fail(c, fiber.StatusConflict, tools.String("Kredensial gagal didaftarkan"))
 		}
 
-		return c.Status(200).JSON(data)
+		return tools.Success(c, 201, tools.Null(), tools.R{"credential": credential})
 	}
 }
 
@@ -83,15 +83,15 @@ func (h *Handlers) Me() fiber.Handler {
 		credentialID := c.Locals("CredentialID").(string)
 		id, err := uuid.FromString(credentialID)
 		if err != nil {
-			return c.Status(400).JSON(map[string]any{"error": err.Error()})
+			return tools.Fail(c, fiber.StatusBadRequest, tools.String("Format id tidak valid"))
 		}
 
 		credential, err := h.services.CredentialById(c.Context(), id)
 		if err != nil {
-			return c.Status(400).JSON(map[string]any{"error": err.Error()})
+			return tools.Fail(c, fiber.StatusNotFound, tools.String("Kredensial tidak ditemukan"))
 		}
 
-		return c.Status(200).JSON(credential)
+		return tools.Success(c, fiber.StatusOK, tools.Null(), tools.R{"credential": credential})
 	}
 }
 
@@ -107,11 +107,10 @@ func (h *Handlers) Login() fiber.Handler {
 		}
 
 		data, err := h.services.Login(c.Context(), req)
-
 		if err != nil {
 			return c.Status(400).JSON(map[string]any{"error": err.Error()})
 		}
 
-		return c.Status(200).JSON(data)
+		return tools.Success(c, fiber.StatusOK, tools.Null(), tools.ToMap(data))
 	}
 }
